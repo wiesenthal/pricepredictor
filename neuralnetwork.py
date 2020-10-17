@@ -3,16 +3,16 @@ from argparse import ArgumentParser
 #argument parsing
 parser = ArgumentParser()
 parser.add_argument('--batch_size', help='Size of each batch.', type=int, default=32)
-parser.add_argument('--num_trains', help='Number of times to train the model.', type = int, default = 11)
+parser.add_argument('--num_trains', help='Number of times to train the model.', type = int, default = 1)
 parser.add_argument('--num_epochs', help='Number of epochs per train.', type = int, default = 230)
-parser.add_argument('--testing_mode', help='For using testing and training data, or just training.', dest='testing_mode', default=False, action='store_true')
-parser.add_argument('--tbm', help='Test batch multiplier, test batch = tbm*batch_size', type = int, default = 3)
-parser.add_argument('--plot_mode', help='When plotting the data on a graph.', dest='plot_mode', default=False, action='store_true')
+parser.add_argument('--testing_mode', help='For using testing and training data, or just training.', dest='testing_mode', default=True, action='store_true')
+parser.add_argument('--tbm', help='Test batch multiplier, test batch = tbm*batch_size', type = int, default = 7)
+parser.add_argument('--plot_mode', help='When plotting the data on a graph.', dest='plot_mode', default=True, action='store_true')
 args = parser.parse_args()
 
 import numpy as np
 from keras.models import Sequential
-from keras.layers import CuDNNLSTM, Dense, Flatten
+from keras.layers import LSTM, Dense, Flatten
 from keras import optimizers
 from tensorflow import compat
 import matplotlib.pyplot as plt
@@ -95,12 +95,13 @@ n_features = X.shape[2]
 if plot_mode:
     fig, axs = plt.subplots(num_trains) #for plotting the data
 
+def getpercent(right, wrong):
+    return round(float(100*right/(right + wrong)), 2)
+
 def train_network(epochs, do_print=True):
     model = Sequential()
     #CuDNNLSTM for GPU support
-    model.add(CuDNNLSTM(100, return_sequences=True, input_shape=(n_steps,n_features)))
-    model.add(CuDNNLSTM(100, return_sequences=True))
-    model.add(CuDNNLSTM(100))
+    model.add(LSTM(100, return_sequences=True, input_shape=(n_steps,n_features)))
     model.add(Dense(1))
     model.compile(optimizer='Adagrad', loss='mse')
 
@@ -117,7 +118,60 @@ def train_network(epochs, do_print=True):
     recent = recent.reshape((1, n_steps, n_features))
     result = model.predict(recent, batch_size = n_steps, verbose=0)
     result = (result*amax[4])[0][0]
+
+    #get errors
+    c, f, tr, tf, zr, zf, xr, xf, hr, hf = error(model)
+    print(f'correct predictions {getpercent(c, f)}%')
+    print(f'correct +10 {getpercent(tr, tf)}%')
+    print(f'correct +20 {getpercent(zr, zf)}%')
+    print(f'correct +40 {getpercent(xr, xf)}%')
+    print(f'correct +80 {getpercent(hr, hf)}%')
+
     return(result)
+
+def error(model, num=600):
+    l = df.shape[0]
+    startIndex = l - num - n_steps
+    correct = 0
+    tenRight = 0
+    tenWrong = 0
+    twenRight = 0
+    twenWrong = 0
+    right40 = 0
+    wrong40 = 0
+    right80 = 0
+    wrong80 = 0
+    false = 0
+    for i in range(num - 1):
+        start = startIndex + i
+        recent = df[start:start+n_steps,:]
+        recent = recent.reshape((1, n_steps, n_features))
+        result = model.predict(recent, batch_size = n_steps, verbose = 0)
+        prediction = (result*amax[4])[0][0]
+        on_day = df[start + n_steps - 1,4] * amax[4]
+        next_day = df[start + n_steps, 4] *amax[4]
+        if ((next_day > on_day and prediction > on_day) or (next_day < on_day and prediction < on_day)):
+            correct += 1
+            if abs(prediction - on_day) > 10:
+                tenRight += 1
+            if abs(prediction - on_day) > 20:
+                twenRight += 1
+            if abs(prediction - on_day) > 40:
+                right40 += 1
+            if abs(prediction - on_day) > 80:
+                right80 += 1
+        else:
+            false += 1
+            if abs(prediction - on_day) > 10:
+                tenWrong += 1
+            if abs(prediction -on_day) > 20:
+                twenWrong += 1
+            if abs(prediction - on_day) > 40:
+                wrong40 += 1
+            if abs(prediction - on_day) > 80:
+                wrong80 += 1
+    return correct, false, tenRight, tenWrong, twenRight, twenWrong, right40, wrong40, right80, wrong80
+
 
 prices = []
 for i in range(num_trains):
@@ -128,6 +182,7 @@ for i in range(num_trains):
     prices.append(p)
 #displaying results
 current_price = (df[-1,4]*amax[4])
+
 if (num_trains > 1):
     mean = sum(prices)/num_trains
     med = median(prices)

@@ -1,3 +1,3 @@
 @ECHO OFF
-python neuralnetwork.py
+python neuralnetwork.py --num_epochs=150
 pause
