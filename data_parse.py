@@ -6,15 +6,18 @@ np.set_printoptions(suppress=True)
 np.set_printoptions( linewidth=100)
 def parse_data():
     df = pd.read_csv('eth.csv')
-    extra_columns = ['date', 'BlkCnt', 'BlkSizeByte', 'BlkSizeMeanByte', 'FeeMeanNtv', 'FeeMedNtv', 'FeeTotNtv', 'DiffMean', \
-                      'FeeMeanUSD', 'FeeMedUSD', 'IssContPctAnn', 'IssTotUSD', 'NVTAdj', 'NVTAdj90', 'IssContNtv', 'IssContUSD', \
-                      'PriceBTC', 'TxCnt', 'TxTfr', 'TxTfrValMedNtv', 'TxTfrValMedUSD', 'TxTfrValNtv', \
-                      'TxTfrValUSD', 'VtyDayRet180d', 'VtyDayRet30d', 'VtyDayRet60d', 'ROI1yr', 'ROI30d']
+    
+    desired_columns = ['AdrActCnt', 'CapMrktCurUSD','NVTAdj', 'IssTotNtv','PriceUSD','SplyCur', 'TxTfrCnt', 'TxTfrValAdjNtv','TxTfrValAdjUSD','TxTfrValMeanNtv','TxTfrValMeanUSD']
+    extra_columns = [c for c in df.columns if c not in desired_columns]
+    #extra_columns = ['date', 'BlkCnt', 'BlkSizeByte', 'BlkSizeMeanByte', 'FeeMeanNtv', 'FeeMedNtv', 'FeeTotNtv', 'DiffMean', \
+    #                  'FeeMeanUSD', 'FeeMedUSD', 'IssContPctAnn', 'IssTotUSD', 'NVTAdj', 'NVTAdj90', 'IssContNtv', 'IssContUSD', \
+    #                  'PriceBTC', 'TxCnt', 'TxTfrValMedNtv', 'TxTfrValMedUSD', 'TxTfrValNtv', \
+    #                  'TxTfrValUSD', 'VtyDayRet180d', 'VtyDayRet30d', 'VtyDayRet60d', 'ROI1yr', 'ROI30d']
     df.drop(columns=extra_columns, inplace=True)
     #even_more = ['AdrActCnt', 'SplyCur', 'FeeTotUSD', 'IssTotNtv', 'TxTfrValAdjNtv', 'TxTfrValMeanNtv', 'TxTfrValMeanUSD']
     #df.drop(columns=even_more, inplace=True)
-    df = df.iloc[-768:]
     col = df.columns
+    df = df.iloc[-768:]
     df = df.to_numpy()
     return(df, col)
 

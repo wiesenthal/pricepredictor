@@ -1,11 +1,17 @@
 # pricepredictor
-a neural network to predict the price of ethereum. 
+LSTM to predict the price of ethereum. 
 
 Trained on data from coinmetrics.io
 
-It does the entire training and output process several times then takes the average, in an attempt to more consistent results.
-Surprisingly the average isn't usually simply yesterday's price.
+Tested to see each day whether it would predict the price increasing or decreasing, it is correct ~53.5% of the time.
 
-run.bat runs the program with default parameters.
+run.bat runs the program with some default parameters.
+
+Requirements: 
+tensorflow
+keras
+numpy
+matplotlib
+pandas
 
 Use "python neuralnetwork.py -h" for help
